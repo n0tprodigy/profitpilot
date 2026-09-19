@@ -4,6 +4,7 @@ import {
   calcNetProfit,
   contributionMarginPct,
   berRoas,
+  storeBerRoas,
   calcPoas,
   fmtPoas,
   fmtBerRoas,
@@ -99,6 +100,25 @@ describe("berRoas", () => {
       fees: 0,
     });
     assert.equal(roas, 2);
+  });
+});
+
+describe("storeBerRoas", () => {
+  it("usa COGS + taxas e ignora portes do cliente", () => {
+    const ber = storeBerRoas({
+      revenue: 200,
+      cogs: 50,
+      fees: 10,
+    });
+    // 200 / (200 − 50 − 10) = 200/140 ≈ 1.4286
+    assert.equal(ber, 200 / 140);
+  });
+
+  it("inclui taxa supplier no COGS", () => {
+    const withoutTax = storeBerRoas({ revenue: 100, cogs: 40, fees: 5 });
+    const withTax = storeBerRoas({ revenue: 100, cogs: 43, fees: 5 });
+    assert.ok(withTax != null && withoutTax != null);
+    assert.ok(withTax > withoutTax);
   });
 });
 

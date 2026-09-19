@@ -616,7 +616,8 @@ function inclusiveDaysBetween(fromKey: string, toKey: string): number {
   );
 }
 
-/** Histórico por campanha (desde o primeiro dia na BD) — para regras de teste 7/14 dias. */
+/** Histórico por campanha (desde o primeiro dia na BD) — para regras de teste 7/14 dias.
+ * Lifetime spend/ROAS incluem fee fixa + % agência da conta (igual ao ROAS do período). */
 export async function loadCampaignLifecycleMap(
   storeId: string,
   adAccountIds: string[],
@@ -626,29 +627,34 @@ export async function loadCampaignLifecycleMap(
   if (!adAccountIds.length) return out;
 
   const storeOid = new mongoose.Types.ObjectId(storeId);
+  const accountIdSet = new Set(adAccountIds);
   const accountOids = adAccountIds.map((id) => new mongoose.Types.ObjectId(id));
 
-  const [lifetimeRows, latestRows] = await Promise.all([
-    AdCampaignDay.aggregate<{
-      _id: { platform: string; campaignId: string };
-      firstSeenDateKey: string;
-      lifetimeSpend: number;
-      lifetimeConversions: number;
-      lifetimeConversionValue: number;
-    }>([
-      { $match: { storeId: storeOid, adAccountId: { $in: accountOids } } },
-      {
-        $group: {
-          _id: { platform: "$platform", campaignId: "$campaignId" },
-          firstSeenDateKey: { $min: "$dateKey" },
-          lifetimeSpend: { $sum: { $ifNull: ["$spend", 0] } },
-          lifetimeConversions: { $sum: { $ifNull: ["$conversions", 0] } },
-          lifetimeConversionValue: {
-            $sum: { $ifNull: ["$conversionValue", 0] },
-          },
-        },
-      },
-    ]),
+  const accounts = await loadSyncAdAccountsForStore(storeOid);
+  const accountFees = new Map<string, ApiAccountFees>();
+  const accountNames = new Map<string, string>();
+  for (const acc of accounts) {
+    const id = String(acc._id);
+    if (!accountIdSet.has(id)) continue;
+    accountFees.set(id, {
+      extraFeeFixed: acc.apiExtraFeeFixed ?? 0,
+      agencyFeePercent: acc.apiAgencyFeePercent ?? 0,
+    });
+    accountNames.set(
+      id,
+      acc.accountName?.trim() || acc.externalAccountId || acc.platform,
+    );
+  }
+
+  const [dayRows, latestRows] = await Promise.all([
+    AdCampaignDay.find({
+      storeId: storeOid,
+      adAccountId: { $in: accountOids },
+    })
+      .select(
+        "dateKey campaignId campaignName platform adAccountId spend conversions conversionValue status currency syncedAt",
+      )
+      .lean(),
     AdCampaignDay.aggregate<{
       _id: { platform: string; campaignId: string };
       status: string;
@@ -666,6 +672,37 @@ export async function loadCampaignLifecycleMap(
     ]),
   ]);
 
+  const firstSeenByKey = new Map<string, string>();
+  for (const r of dayRows) {
+    const platform = r.platform as string;
+    const key = campaignMetricsKey(platform, r.campaignId);
+    const prev = firstSeenByKey.get(key);
+    if (!prev || r.dateKey < prev) firstSeenByKey.set(key, r.dateKey);
+  }
+
+  const dbRows: DbCampaignRow[] = dayRows.map((r) => ({
+    dateKey: r.dateKey,
+    campaignId: r.campaignId,
+    campaignName: r.campaignName?.trim() || "Campanha",
+    platform: r.platform as AdPlatform,
+    adAccountId: r.adAccountId ? String(r.adAccountId) : "",
+    status: r.status ?? "",
+    statusLabel: "",
+    spendPlatform: r.spend ?? 0,
+    impressions: 0,
+    clicks: 0,
+    conversions: r.conversions ?? 0,
+    conversionValue: r.conversionValue ?? 0,
+    currency: r.currency ?? "USD",
+    syncedAt: r.syncedAt ?? null,
+  }));
+
+  const withFees = applyFeesAndAggregateCampaignRows(
+    dbRows,
+    accountFees,
+    accountNames,
+  );
+
   const latestByKey = new Map(
     latestRows.map((r) => [
       campaignMetricsKey(r._id.platform, r._id.campaignId),
@@ -673,22 +710,21 @@ export async function loadCampaignLifecycleMap(
     ]),
   );
 
-  for (const row of lifetimeRows) {
-    const key = campaignMetricsKey(row._id.platform, row._id.campaignId);
+  for (const row of withFees) {
+    const key = campaignMetricsKey(row.platform, row.campaignId);
     const latest = latestByKey.get(key);
-    const firstSeen = row.firstSeenDateKey;
+    const firstSeen = firstSeenByKey.get(key);
+    if (!firstSeen) continue;
     out.set(key, {
       firstSeenDateKey: firstSeen,
       daysRunning: inclusiveDaysBetween(firstSeen, referenceDateKey),
-      lifetimeSpend: row.lifetimeSpend,
-      lifetimeConversions: row.lifetimeConversions,
-      lifetimeConversionValue: row.lifetimeConversionValue,
-      lifetimeRoas: roasFromCampaign(
-        row.lifetimeSpend,
-        row.lifetimeConversionValue,
-      ),
+      lifetimeSpend: row.spend,
+      lifetimeConversions: row.conversions,
+      lifetimeConversionValue: row.conversionValue,
+      lifetimeRoas: roasFromCampaign(row.spend, row.conversionValue),
       isActive: isActiveCampaignStatus(latest?.status ?? ""),
-      campaignName: latest?.campaignName?.trim() || "Campanha",
+      campaignName:
+        latest?.campaignName?.trim() || row.campaignName || "Campanha",
     });
   }
 

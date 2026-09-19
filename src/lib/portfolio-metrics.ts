@@ -16,7 +16,7 @@ import { getCachedWorkspaceSummary } from "@/lib/metrics-summary-cache";
 import { parsePortfolioParam } from "@/lib/portfolio-scope";
 import { resolvePeriod, formatDateInput, type PeriodInput } from "@/lib/period";
 import { convertToBaseCurrency } from "@/lib/fx";
-import { berRoas, calcNetProfit, withoutCustomerShipping } from "@/lib/profit";
+import { storeBerRoas, calcNetProfit, withoutCustomerShipping } from "@/lib/profit";
 import {
   formatCurrency,
   formatPercent,
@@ -351,7 +351,7 @@ export async function buildPortfolioSummary(
     totalAgg.revenue > 0 ? (netProfit / totalAgg.revenue) * 100 : 0;
   const roas =
     totalAgg.adSpend > 0 ? totalAgg.revenue / totalAgg.adSpend : null;
-  const ber = berRoas(withoutCustomerShipping(totalAgg));
+  const ber = storeBerRoas(totalAgg);
 
   const kpis: SummaryKpi[] = [
     {

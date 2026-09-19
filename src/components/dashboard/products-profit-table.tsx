@@ -32,7 +32,7 @@ export function ProductsProfitTable({
             </p>
           ) : (
             <p className="mt-1 text-sm text-muted-foreground">
-              BER = break-even ROAS (margem de contribuição antes de ads).
+              BER = break-even ROAS (COGS/taxa supplier + taxas; vs ROAS com agência).
             </p>
           )}
         </div>

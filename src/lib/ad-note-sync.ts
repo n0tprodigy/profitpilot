@@ -6,7 +6,7 @@ import { resolveStoreAdMetricsForDay } from "@/lib/ad-insights";
 import { loadReportAdKpisForPeriod } from "@/lib/ad-campaign-metrics";
 import { loadActiveAdAccountIdsForStore } from "@/lib/ad-accounts";
 import { buildWorkspacePnl } from "@/lib/metrics";
-import { berRoas, withoutCustomerShipping } from "@/lib/profit";
+import { storeBerRoas } from "@/lib/profit";
 import {
   buildCampaignDecisions,
   pickBestCampaign,
@@ -45,8 +45,8 @@ export async function syncApiMetricsToDailyNote(
     const pnl = await buildWorkspacePnl(workspaceId, { dates: dateKey }, storeId);
     const storeLine = pnl.stores[0];
     storeBer = storeLine
-      ? berRoas(withoutCustomerShipping(storeLine))
-      : berRoas(withoutCustomerShipping(pnl.totals));
+      ? storeBerRoas(storeLine)
+      : storeBerRoas(pnl.totals);
     storeRevenue = storeLine?.revenue;
     storeAdSpend = storeLine?.adSpend ?? metrics.total.spend;
   } catch {

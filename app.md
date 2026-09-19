@@ -467,23 +467,25 @@ Net Profit =
 
 ## O que é
 
-O **BER (Break-Even ROAS)** é o ROAS mínimo a que precisas de vender para **não perder dinheiro** depois de pagar produto e taxas. Acima do BER tens lucro; abaixo, prejuízo.
+O **BER (Break-Even ROAS)** é o ROAS mínimo a que precisas de vender para **não perder dinheiro** depois de pagar produto (COGS, **inclui taxa supplier / EU TAX**) e **taxas de pagamento**. Compara-se com o **ROAS real**, que usa o gasto em ads **com fee de agência** (fixa + %). Acima do BER tens lucro; abaixo, prejuízo.
 
 ## Fórmula
 
 ```
 Margem de contribuição (%) =
-   (Preço de venda − COGS − Taxas de pagamento) / Preço de venda
+   (Revenue − COGS − Taxas de pagamento) / Revenue
 
 BER (Break-Even ROAS) = 1 / Margem de contribuição
+                      = Revenue / (Revenue − COGS − Taxas)
 
 Exemplo:
-   Produto vendido a 40€, com 15€ de custos (COGS+taxas)
+   Revenue 40€, COGS+taxas supplier 12€, taxas pagamento 3€
    Margem = (40 − 15) / 40 = 0,625 (62,5%)
    BER = 1 / 0,625 = 1,6
-   → Precisas de ROAS ≥ 1,6 para teres lucro.
+   → Precisas de ROAS ≥ 1,6 (já com ads + taxa de agência no denominador do ROAS).
 ```
 
+Portes cobrados ao cliente **não** entram no BER (são margem). Ads não entram na fórmula do BER — entram no ROAS com que o comparas.
 ## Onde aparece
 
 * **BER da loja** (médio ponderado por vendas) vs **ROAS real** atual — semáforo verde/vermelho.

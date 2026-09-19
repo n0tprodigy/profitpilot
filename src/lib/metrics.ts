@@ -119,7 +119,7 @@ import { resolveLastSyncedAtForStoreIds } from "@/lib/last-sync-at";
 import {
   calcNetProfit,
   contributionMarginPct,
-  berRoas,
+  storeBerRoas,
   fmtBerRoas,
   calcPoas,
   fmtPoas,
@@ -2907,7 +2907,7 @@ export async function buildWorkspaceSummary(
     curChargebacks,
   );
   const margin = totals.revenue > 0 ? (netProfit / totals.revenue) * 100 : 0;
-  const curBer = berRoas(marginInputsFromAgg(totals));
+  const curBer = storeBerRoas(totals);
 
   const money = (v: number): SummaryKpi["value"] =>
     formatCurrency(v, currency);
@@ -2979,8 +2979,8 @@ export async function buildWorkspaceSummary(
       cur.revenue > 0 ? (curProfit / cur.revenue) * 100 : 0;
     const prevMargin =
       prev.revenue > 0 ? (prevProfit / prev.revenue) * 100 : 0;
-    const curBer = berRoas(marginInputsFromAgg(cur));
-    const prevBer = berRoas(marginInputsFromAgg(prev));
+    const curBer = storeBerRoas(cur);
+    const prevBer = storeBerRoas(prev);
     const curCm = contributionMarginPct(marginInputsFromAgg(cur));
     const curRoas =
       scopedAdSpendKnown && curAdSpend > 0 ? cur.revenue / curAdSpend : null;
@@ -3136,14 +3136,14 @@ export async function buildWorkspaceSummary(
         orders: 0,
       },
     );
-    const prevBerWorkspace = berRoas(marginInputsFromAgg(prevAll));
+    const prevBerWorkspace = storeBerRoas(prevAll);
     extendedKpis = [
       {
         label: "BER",
         value: fmtRoasRatio(curBer),
         title:
           curBer != null
-            ? "Break-even ROAS — ROAS mínimo para não perder dinheiro"
+            ? "Break-even ROAS — mínimo vs ROAS (ads + agência). Inclui COGS/taxa supplier e taxas de pagamento"
             : "Sem margem de contribuição positiva",
         delta:
           curBer != null && prevBerWorkspace != null
@@ -3452,8 +3452,8 @@ export async function buildWorkspaceSummary(
         dayKeysInSlice(effectivePrevSlice, storeTz),
       ),
     ]);
-    const curBerExtended = berRoas(marginInputsFromAgg(cur));
-    const prevBerExtended = berRoas(marginInputsFromAgg(prevForExtended));
+    const curBerExtended = storeBerRoas(cur);
+    const prevBerExtended = storeBerRoas(prevForExtended);
     const curContributionMarginExtended = contributionMarginPct(
       marginInputsFromAgg(cur),
     );
@@ -3463,7 +3463,7 @@ export async function buildWorkspaceSummary(
         value: fmtRoasRatio(curBerExtended),
         title:
           curBerExtended != null
-            ? `Break-even ROAS — abaixo disto há prejuízo (margem contrib. ${formatPercent(curContributionMarginExtended)})`
+            ? `Break-even ROAS — COGS (taxa supplier) + taxas de pagamento; comparar com ROAS que inclui fee de agência (margem contrib. ${formatPercent(curContributionMarginExtended)})`
             : "Sem margem de contribuição positiva",
         delta:
           curBerExtended != null && prevBerExtended != null

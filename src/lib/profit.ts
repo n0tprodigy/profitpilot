@@ -42,11 +42,29 @@ export function contributionMarginPct(input: ProfitInputs): number {
   return (cm / input.revenue) * 100;
 }
 
-/** Break-even ROAS (revenue / contribution margin). */
+/** Break-even ROAS da loja / produto.
+ * Custos variáveis: COGS (inclui taxa supplier / EU TAX) + taxas de pagamento.
+ * Portes cobrados ao cliente não entram. Ads/agência NÃO entram na fórmula —
+ * entram no ROAS com que se compara (gasto total = plataforma + fee agência). */
 export function berRoas(input: ProfitInputs): number | null {
   const cm = input.revenue - input.cogs - input.shipping - input.fees;
   if (cm <= 0) return null;
   return input.revenue / cm;
+}
+
+/**
+ * BER da loja a partir do agg Shopify (portes cliente = 0).
+ * COGS deve já incluir taxa supplier (ex. EU Win-Win); fees = taxas de gateway.
+ */
+export function storeBerRoas(
+  agg: Pick<ProfitInputs, "revenue" | "cogs" | "fees">,
+): number | null {
+  return berRoas({
+    revenue: agg.revenue,
+    cogs: agg.cogs,
+    shipping: 0,
+    fees: agg.fees,
+  });
 }
 
 /** POAS = lucro líquido / ad spend */
