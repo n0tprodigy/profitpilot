@@ -228,7 +228,7 @@ export function DashboardClient() {
               cogsIncomplete={portfolioData.cogsIncomplete}
               missingCogsCount={portfolioData.missingCogsCount}
               missingCogsMessage={portfolioData.missingCogsMessage}
-              missingAdSpendDays={portfolioData.missingAdSpendDays}
+              missingAdSpendDays={0}
               adsHref={adsHref}
             />
           </>
@@ -283,7 +283,7 @@ export function DashboardClient() {
                 cogsIncomplete={workspaceData.cogsIncomplete}
                 missingCogsCount={workspaceData.missingCogsCount}
                 missingCogsMessage={workspaceData.missingCogsMessage}
-                missingAdSpendDays={workspaceData.missingAdSpendDays}
+                missingAdSpendDays={0}
                 adsHref={adsHref}
               />
               {workspaceData.monthlyGoals && (
@@ -328,7 +328,7 @@ export function DashboardClient() {
                 cogsIncomplete={workspaceData.cogsIncomplete}
                 missingCogsCount={workspaceData.missingCogsCount}
                 missingCogsMessage={workspaceData.missingCogsMessage}
-                missingAdSpendDays={workspaceData.missingAdSpendDays}
+                missingAdSpendDays={0}
                 adsHref={adsHref}
               />
             </>
